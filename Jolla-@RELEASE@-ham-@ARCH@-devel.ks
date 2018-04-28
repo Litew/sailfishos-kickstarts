@@ -1,12 +1,14 @@
-# DisplayName: Jolla ham/@ARCH@ (release) 1+master.20170224124847.6262c6d
+# DisplayName: Jolla ham/@ARCH@ (release) 1
 # KickstartType: release
+# DeviceModel: ham
+# DeviceVariant: ham
 # SuggestedImageType: fs
 # SuggestedArchitecture: armv7hl
 
 timezone --utc UTC
-user --name nemo --groups audio,video,inet --password nemo
-keyboard us
 lang en_US.UTF-8
+keyboard us
+user --name nemo --groups audio,input,video,inet --password nemo
 
 ### Commands from /tmp/sandbox/usr/share/ssu/kickstart/part/default
 part / --size 500 --ondisk sda --fstype=ext4
@@ -102,13 +104,15 @@ fi
 
 %post --nochroot
 export SSU_RELEASE_TYPE=release
-### begin 01_release
-if [ -n "$IMG_NAME" ]; then
-    echo "BUILD: $IMG_NAME" >> $INSTALL_ROOT/etc/meego-release
-fi
-### end 01_release
 ### begin ham
-cp $INSTALL_ROOT/etc/sailfish-release $IMG_OUT_DIR
+cp $INSTALL_ROOT/etc/os-release $IMG_OUT_DIR
+ls -l $INSTALL_ROOT/usr/share/ssu/features.d/customer-*.ini &> /dev/null
+if [ "$?" == "0" ]; then
+  for CFILE in $(ls -1 $INSTALL_ROOT/usr/share/ssu/features.d/customer-*.ini); do
+     CUSTOMER_TMP+=${CUSTOMER_TMP:+ }$(grep -i "^name[ ]*=" $CFILE | sed 's/^.*=[ \t]*//')
+  done
+  echo "SAILFISH_CUSTOMER=\""$(echo ${CUSTOMER_TMP} | sed 's![/ ()]\+!_!g')"\"" >> $IMG_OUT_DIR/os-release
+fi
 ### end ham
 %end
 
@@ -119,7 +123,7 @@ pushd $IMG_OUT_DIR
 
 DEVICE=ham
 
-VERSION_FILE=./sailfish-release
+VERSION_FILE=./os-release
 source $VERSION_FILE
 
 # Locate rootfs tar.bz2 archive.
